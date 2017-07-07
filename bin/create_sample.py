@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 
-from spyklines import SparkLine
+from spyklines import SparkLine, TrendLine
 
 
 class DiffTable(object):
@@ -12,6 +12,13 @@ class DiffTable(object):
         self.diff = round(100.0 * (current - previous) / previous, 3)
 
     def plot(self, ax):
+        def get_diff_color(value):
+            if value > 5:
+                return 'red'
+            elif -5 < value < 5:
+                return 'white'
+            else:
+                return 'green'
         values = [[self.previous, self.current, self.diff]]
         for k, v in ax.spines.items():
             v.set_edgecolor('#D3D3D3')
@@ -21,7 +28,11 @@ class DiffTable(object):
         ax.set_yticklabels([], visible=False)
         ax.get_xaxis().set_ticks([])
         ax.get_yaxis().set_ticks([])
+        cellcolours = np.array([['white', 'white', 'white']])
+        cellcolours[:, 2] = get_diff_color(self.diff)
+
         table = ax.table(cellText=values, cellLoc='center',
+                         cellColours=cellcolours,
                          colLabels=['Previous', 'Current',
                                     'Diff%'], loc='center')
         table.set_fontsize(8)
@@ -55,9 +66,12 @@ def plot_sparklines(sparklines):
     for sparkline in sparklines:
         ax = plt.subplot(size, 2, current_plot_number)
         sparkline.plot(ax)
+        trendline = TrendLine(sparkline.name, sparkline.values)
+        trendline.plot(ax)
         current_plot_number += 1
         ax = plt.subplot(size, 2, current_plot_number)
-        DiffTable(sparkline.values[-2], sparkline.values[-1]).plot(ax)
+        table = DiffTable(sparkline.values[-2], sparkline.values[-1])
+        table.plot(ax)
         current_plot_number += 1
     plt.show()
 
