@@ -17,4 +17,4 @@ class TrendLine(object):
         ax.set_yticklabels([], visible=False)
         ax.get_xaxis().set_ticks([])
         ax.get_yaxis().set_ticks([])
-        ax.plot(range(0, len(self.values)), p(self.values), linewidth=0.5)
+        ax.plot(range(0, len(self.values)), p(self.values), ':', linewidth=0.5)
