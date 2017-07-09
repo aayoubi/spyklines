@@ -1,2 +1,2 @@
-from spyklines import *
-from trendlines import *
+from sparkline import *
+from trendline import *
