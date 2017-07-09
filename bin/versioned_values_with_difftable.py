@@ -5,11 +5,21 @@ import logging
 from spyklines import SparkLine, TrendLine
 
 
+class SparkLineWithChangelist(SparkLine):
+    def __init__(self, *args):
+        super(self.__class__, self).__init__(*args)
+        self.changelists = []
+
+
 class DiffTable(object):
-    def __init__(self, previous, current):
-        self.previous = previous
-        self.current = current
-        self.diff = round(100.0 * (current - previous) / previous, 3)
+    def __init__(self, previous_value, previous_changelist, current_value,
+                 current_changelist):
+        self.previous_value = previous_value
+        self.current_value = current_value
+        self.previous_changelist = previous_changelist
+        self.current_changelist = current_changelist
+        self.diff = round(100.0 * (current_value - previous_value) /
+                          previous_value, 3)
 
     def plot(self, ax):
         def get_diff_color(value):
@@ -19,7 +29,7 @@ class DiffTable(object):
                 return 'white'
             else:
                 return 'green'
-        values = [[self.previous, self.current, self.diff]]
+        values = [[self.previous_value, self.current_value, self.diff]]
         for k, v in ax.spines.items():
             v.set_edgecolor('#D3D3D3')
             if k != 'bottom':
@@ -30,31 +40,34 @@ class DiffTable(object):
         ax.get_yaxis().set_ticks([])
         cellcolours = np.array([['white', 'white', 'white']])
         cellcolours[:, 2] = get_diff_color(self.diff)
-
         table = ax.table(cellText=values, cellLoc='center',
                          cellColours=cellcolours,
-                         colLabels=['Previous', 'Current',
-                                    'Diff%'], loc='center')
+                         colLabels=['Previous (@{})'.format(
+                             self.previous_changelist),
+                             'Current (@{})'.format(self.current_changelist),
+                             'Diff%'], loc='center')
         table.set_fontsize(8)
         for key, cell in table.get_celld().items():
                 cell.set_linewidth(0)
 
 
-def ci_run_to_plt(runs, step=None, metric=None):
+def ci_run_to_plt(runs, filter_on_step=None, filter_on_metric=None):
     '''
     Transform the CiRun results (steps / metrics)
     into a dictionary of 'step-metric' : [data]
     '''
     sparklines = {}
-    for run in runs:
-        steps = run['metrics'].keys() if not step else [step]
-        for s in steps:
-            metrics = run['metrics'][s].keys() if not metric else [metric]
-            for m in metrics:
-                name = '{}-{}'.format(s, m)
+    for run in sorted(runs, key=lambda x: x['changelist']):
+        for step in filter(lambda x: x == filter_on_step
+                           if filter_on_step else True, run['metrics'].keys()):
+            for metric in filter(lambda x: x == filter_on_metric
+                                 if filter_on_metric else True,
+                                 run['metrics'][step].keys()):
+                name = '{}-{}'.format(step, metric)
                 if name not in sparklines:
-                    sparklines[name] = SparkLine(name, [])
-                sparklines[name].values.append(run['metrics'][s][m])
+                    sparklines[name] = SparkLineWithChangelist(name, [])
+                sparklines[name].values.append(run['metrics'][step][metric])
+                sparklines[name].changelists.append(run['changelist'])
     return sorted(sparklines.values(), key=lambda s: s.name)
 
 
@@ -70,7 +83,8 @@ def plot_sparklines(sparklines):
         trendline.plot(ax)
         current_plot_number += 1
         ax = plt.subplot(size, 2, current_plot_number)
-        table = DiffTable(sparkline.values[-2], sparkline.values[-1])
+        table = DiffTable(sparkline.values[-2], sparkline.changelists[-2],
+                          sparkline.values[-1], sparkline.changelists[-1])
         table.plot(ax)
         current_plot_number += 1
     plt.show()
@@ -81,7 +95,8 @@ if __name__ == '__main__':
     logging.basicConfig(format=log_format, level=logging.DEBUG)
     data = []
     for i in range(1, 100):
-        data.append({'metrics':
+        data.append({'changelist': 4000000+np.random.randint(0, 1000),
+                     'metrics':
                      {'cva': {'elapsed': np.random.randint(100, 200),
                               'eval': np.random.randint(85, 150),
                               'aggregation': np.random.randint(10, 30),
