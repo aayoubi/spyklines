@@ -1,2 +1,2 @@
-from sparkline import *
-from trendline import *
+from .sparkline import *
+from .trendline import *

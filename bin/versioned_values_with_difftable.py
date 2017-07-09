@@ -95,17 +95,16 @@ if __name__ == '__main__':
     logging.basicConfig(format=log_format, level=logging.DEBUG)
     data = []
     for i in range(1, 100):
-        data.append({'changelist': 4000000+np.random.randint(0, 1000),
+        data.append({'changelist': 10000+np.random.randint(0, 1000),
                      'metrics':
-                     {'cva': {'elapsed': np.random.randint(100, 200),
-                              'eval': np.random.randint(85, 150),
-                              'aggregation': np.random.randint(10, 30),
-                              'pgop': np.random.randint(5, 25)},
-                      'dv01': {'elapsed': np.random.randint(150, 350),
-                               'eval': np.random.randint(130, 250),
-                               'aggregation': np.random.randint(50, 80),
-                               'pgop': np.random.randint(10, 20)}}
+                     {'step1': {'elapsed': np.random.randint(100, 200),
+                                'kernel': np.random.randint(85, 150),
+                                'user': np.random.randint(10, 30),
+                                'com': np.random.randint(5, 25)},
+                      'step2': {'elapsed': np.random.randint(150, 350),
+                                'kernel': np.random.randint(130, 250),
+                                'user': np.random.randint(50, 80),
+                                'com': np.random.randint(10, 20)}}
                      })
-    # plt.tight_layout()
     data = ci_run_to_plt(data)
     plot_sparklines(data)
